@@ -65,8 +65,6 @@ if (!exists("summary_back")) {
   
   setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
 }
-
-rm(screen_dat, sent_dat, sent_multi, sent_resp)
 ```
 
 ```{r covars, include=FALSE, message=FALSE, warning=FALSE}
@@ -97,7 +95,7 @@ for (i in 1:groups) {
 }
 
 # Remove unnecessary variables
-var_list = c("CP", "groups", "group_list", "i", "geo", "geo_map", "location", "paraphrase", "part_para", "name", "CP_diff")
+var_list = c("CP", "groups", "group_list", "i", "paraphrase", "part_para", "name", "CP_diff", "group")
 rm(list=var_list)
 ```
 
@@ -127,7 +125,7 @@ p600_covar <- p600_covar %>%
   select(-c(bin_diff.x, bin_diff.y))
 
 # Remove unnecessary variables
-rm(list = c("CP_diff_MAE", "CP_diff_SUSE", "dialect_dat"))
+rm(list = c("CP_diff_MAE", "CP_diff_SUSE"))
 ```
 
 ```{r graph_elements, include=FALSE, message=FALSE, warning=FALSE}
@@ -184,6 +182,7 @@ knitr::kable(stim_table) %>%
 
 # Remove variables
 var_list <- c("critical_dm_ex", "critical_sm_ex", "critical_un_ex", "critical_context", "filler_context", "filler_ex", "stim_table")
+rm(list = var_list)
 ```
 
 # Predictions
@@ -389,7 +388,8 @@ new_theme_specs <- list(geom_jitter(size = 1),
 
 # Attitude and culture data
 att_dat <- summary_back %>%
-  select(Southern, South_weighted, dialect, double_acceptable, MC_mean) %>%
+  select(Southern, South_weighted, double_acceptable, MC_mean,
+         dialect, suse_dummy, mae_dummy) %>%
   drop_na()
 
 # Make culture data plot
@@ -408,43 +408,26 @@ att_plot <- ggplot(att_dat) +
   scale_x_continuous(expand = c(0,0), limits = c(1,5)) +
   xlab("Mean Southern dialect attitude score")
 
-# Make exposure plot
-# exp_plot <- ggplot(att_dat) +
-#   aes(MC_mean, double_acceptable, color = dialect) +
-#   new_theme_specs
-
 # Combine plots
 cult_plot + att_plot
 ```
 
 ```{r attitude_regress, echo=FALSE, eval=FALSE}
+# Regression for cultural affiliation by dialect group interaction
 lm_cult <- lm(double_acceptable ~ South_weighted*dialect, att_dat)
 summary(lm_cult)
 
-att_suse <- att_dat %>% dplyr::filter(dialect == "SUSE")
-
-lm_cult_suse <- lm(double_acceptable ~ South_weighted, att_suse)
+# Explore effect of cultural affiliation on acceptability in SUSE listeners
+lm_cult_suse <- lm(double_acceptable ~ South_weighted*suse_dummy, att_dat)
 summary(lm_cult_suse)
 
-att_mae <- att_dat %>% dplyr::filter(dialect == "MAE")
-
-lm_cult_mae <- lm(double_acceptable ~ South_weighted, att_mae)
+# Explore effect of cultural affiliation on acceptability in MAE listeners
+lm_cult_mae <- lm(double_acceptable ~ South_weighted*mae_dummy, att_dat)
 summary(lm_cult_mae)
 
-exp <- summary_back %>% select(double_acceptable, MC_mean, south_only, dialect)
-
-lm_exp_MC <- lm(double_acceptable ~ MC_mean*dialect, exp)
-summary(lm_exp_MC)
-
-exp_suse <- exp %>% dplyr::filter(dialect == "SUSE")
-
-lm_exp_suse <- lm(double_acceptable ~ MC_mean, exp_suse)
-summary(lm_exp_suse)
-
-exp_mae <- exp %>% dplyr::filter(dialect == "MAE")
-
-lm_exp_mae <- lm(double_acceptable ~ MC_mean, exp_mae)
-summary(lm_exp_mae)
+# Regression for Southern language attitudes by dialect group interaction
+lm_att <- lm(double_acceptable ~ Southern*dialect, att_dat)
+summary(lm_att)
 ```
 
 <font size=5>95% confidence intervals displayed around regression lines</font>
