@@ -1,7 +1,6 @@
 # CNS 2020 poster
-Cognitive Neuroscience 2020 conference poster using `posterdown_html`
 
-I presented this poster at the [27th Annual Meeting of the Cognitive Neuroscience Society in Boston, Massachusetts](https://www.cogneurosociety.org/cns-2020-program/). This work will contribute to my Master's thesis on language processing and dialectal variation in syntax. 
+I will present this poster at the [27th Annual Meeting of the Cognitive Neuroscience Society in Boston, Massachusetts](https://www.cogneurosociety.org/cns-2020-program/). This work will contribute to my Master's thesis on language processing and dialectal variation in syntax. 
 
 I presented preliminary findings from my Mainstream American English participant group at Psychonomics in the fall. This poster includes the final Mainstream group, as well as an almost-complete Southern United States English (SUSE) participant group.
 
