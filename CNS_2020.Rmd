@@ -66,7 +66,7 @@ if (!exists("summary_back")) {
   setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
 }
 
-rm(screen_dat, sent_dat, sent_multi, sent_resp, ind)
+rm(screen_dat, sent_dat, sent_multi, sent_resp)
 ```
 
 ```{r covars, include=FALSE, message=FALSE, warning=FALSE}
