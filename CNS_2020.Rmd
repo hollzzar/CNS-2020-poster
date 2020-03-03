@@ -250,8 +250,8 @@ age_suse <- summary_back %>%
   round(1)
 
 # Table strings
-loc_mae <- "Did not lived in the South for a significant period of time"
-loc_suse <- "Lived in the South from ages 3-13 or 14-18"
+loc_mae <- "Did not live in the South for a significant period of time"
+loc_suse <- "Lived in the South during childhood or adolescence"
 dia_mae <- "Not exposed to \"might could\" and unfamiliar with double modals"
 dia_suse <- "Exposed to \"might could\" or familiar with double modals"
 
