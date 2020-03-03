@@ -347,7 +347,8 @@ exttheme_specs <- list(geom_errorbar(aes(ymin=rating-ci, ymax=rating+ci), width=
                        theme_specs,
                        theme(axis.text.x=element_blank(), 
                              axis.title.x=element_blank(),
-                             axis.ticks.x=element_blank()))
+                             axis.ticks.x=element_blank(),
+                             panel.spacing.y=unit(1, "lines")))
 
 # Create acceptability/intelligibility plot
 accpt_plot <- ggplot(multi_error_accpt, aes(modal, rating, fill=modal)) +
