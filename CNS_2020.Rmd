@@ -1,0 +1,470 @@
+---
+title: |
+  <center> We \"might could\" revisit syntactic processing: </center>
+  <center> Studying dialectal variation with event-related potentials </center>
+poster_height: "36in"
+poster_width: "48in"
+font_family: Avenir
+titletext_fontfamily: Avenir
+primary_colour: "#001E44"
+secondary_colour: "#016c5920"
+accent_colour: "#d7d8db"
+author:
+  - name: Holly A. Zaharchuk
+  - name: Adrianna Shevlin
+  - name: Janet G. van Hell
+affiliation:
+  - address: Department of Psychology \& Center for Language Science, The Pennsylvania State University
+column_numbers: 3
+logoright_name: "BiLD_logo_white.png"
+logoleft_name: "Logo_PSU_white.png"
+titlebox_borderwidth: "0.5cm"
+sectitle_borderwidth: "1mm"
+titlebox_bordercol: "#001E44"
+author_textcol: "#FFFFFF"
+sectitle_textsize: "45pt"
+sectitle2_textsize: "40pt"
+body_textsize: "30pt"
+sectitle_boxshape: "3mm 0mm"
+link_col: "#016c59"
+columnline_style: solid
+columnline_col: "#d7d8db"
+columnline_width: "2mm"
+output: 
+  posterdown::posterdown_html:
+    self_contained: false
+bibliography: DoubleModals.bib
+link-citations: no
+csl: apa.csl
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+## R setup ##
+
+# knitr settings
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+knitr::knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackage{xcolor}', x, fixed = TRUE)})
+```
+
+```{r vars, include=FALSE, message=FALSE, warning=FALSE}
+## Load behavioral data ##
+
+# Set global variables
+code_geo <- FALSE
+new_image <- FALSE
+new_erp <- FALSE
+SUSE_tab <- FALSE
+
+# Load behavior variables
+if (!exists("summary_back")) {
+  
+  setwd("~/Mirror/DM_analysis_scripts/r_scripts")
+  
+  source("DM_attitudes_survey.R", local=TRUE)
+  
+  setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
+}
+
+rm(screen_dat, sent_dat, sent_multi, sent_resp, ind)
+```
+
+```{r covars, include=FALSE, message=FALSE, warning=FALSE}
+## Load ERP data ##
+
+# Create variable lists
+group_list <- c("MAE", "SUSE")
+groups <- length(group_list)
+
+# Loops through groups and pull 
+for (i in 1:groups) {
+  
+  # Load ERP data
+  group <- group_list[i]
+  
+  # Set directory to ERP data
+  setwd("~/Mirror/DM_analysis_scripts/r_scripts")
+  
+  # Load ERP data for correlation analysis
+  source("DM_CP.R", local=TRUE)
+  
+  # Set directory back to poster
+  setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
+  
+  name <- paste0("CP_diff", "_", group)
+  assign(name, get("CP_diff"))
+  
+}
+
+# Remove unnecessary variables
+var_list = c("CP", "groups", "group_list", "i", "geo", "geo_map", "location", "paraphrase", "part_para", "name", "CP_diff")
+rm(list=var_list)
+```
+
+```{r p600_covar, include=FALSE, message=FALSE, warning=FALSE}
+## Get P600 amplitude data for all participants ##
+
+# Join ERP lists
+all_erp <- c(MAE_erp, SUSE_erp)
+
+# Mark which participants have ERP data and filter
+summary_back <- summary_back %>%
+  dplyr::filter(ID %notin% unusable) %>%
+  mutate(erp_code = ifelse(ID %in% all_erp, 1, 0))
+
+# Create separate data frame with everyone who has ERP data
+p600_covar <- summary_back %>%
+  dplyr::filter(erp_code == 1)
+
+# Combine summary data with P600 amplitude data
+p600_covar <- p600_covar %>% 
+  left_join(CP_diff_SUSE, c("ID"="ERPset")) %>%
+  left_join(CP_diff_MAE, c("ID"="ERPset"))
+
+# Remove extra column after joining
+p600_covar <- p600_covar %>% 
+  mutate(bin_diff = coalesce(p600_covar$bin_diff.x, p600_covar$bin_diff.y)) %>%
+  select(-c(bin_diff.x, bin_diff.y))
+
+# Remove unnecessary variables
+rm(list = c("CP_diff_MAE", "CP_diff_SUSE", "dialect_dat"))
+```
+
+```{r graph_elements, include=FALSE, message=FALSE, warning=FALSE}
+# Create variables for graphs
+scale_mean_5 <- mean(c(1,5))
+scale_mean_4 <- mean(c(1,4))
+text_size <- 12
+theme_specs <- list(theme(text=element_text(family="Avenir"),
+                    strip.background=element_blank(),
+                    legend.key.size=unit(0.4, "cm"),
+                    plot.title=element_text(size=text_size),
+                    axis.title.y=element_text(size=text_size*0.75),
+                    axis.title.x=element_text(size=text_size*0.75)))
+```
+
+# Background
+
+- Dialectal (regional, social, or ethnocultural) variation is inherent to language
+- Theories of language processing are limited in their explanatory power of everyday speech without including variation
+- Neurocognitive studies of dialect tend to focus on phonological (acoustic) or lexical (word-based) rather than syntactic (structural) variation
+- Syntactic processing research with EEG typically relies written stimuli containing grammatical violations or ambiguities
+- **Double modals**: indirectness or hedging <font size=5>[@hasty2012; @mishoe1994]</font>
+
+# Stimuli
+
+```{r stims, fig.align='center', echo=FALSE, out.width='100%'}
+# Sentence strings
+critical_dm_ex <- "\"She thinks she *might **should*** ask the professor for an extension.\""
+critical_sm_ex <- "\"She thinks she ***should*** ask the professor for an extension.\""
+critical_un_ex <- "\"She thinks she *could **should*** ask the professor for an extension.\""
+critical_context <- "\"Kaitlyn is having a hard time with her essay.\""
+filler_context <- "\"Kaitlyn waits for the bus every morning to go to work.\""
+filler_ex <- "\"She said *the that* bus is usually late.\""
+
+# Stimulus table
+headers <- c("Condition", "Context sentence", "Type", "Target sentence")
+critical_dm <- c("Critical", critical_context, "Attested double modal", critical_dm_ex)
+critical_sm <- c("Critical", critical_context, "Standard single modal", critical_sm_ex)
+critical_un <- c("Critical", critical_context, "Unattested double modal", critical_un_ex)
+filler <- c("Filler", filler_context, "", filler_ex)
+stim_table <- rbind(critical_sm, critical_dm, critical_un, filler)
+rownames(stim_table) <- NULL
+colnames(stim_table) <- headers
+
+# Knit stimulus table
+knitr::kable(stim_table) %>%
+  kableExtra::kable_styling(font_size=30) %>%
+  collapse_rows(columns = 1:length(headers), valign = "middle") %>%
+  row_spec(4, extra_css="border-top: 5px solid #d7d8db; border-bottom: 5px solid #d7d8db") %>%
+  row_spec(3, extra_css="border-top: 5px solid #d7d8db") %>%
+  footnote(general="Modals used: could and should",
+           general_title="") %>%
+  row_spec(0, align = "c")
+
+# Remove variables
+var_list <- c("critical_dm_ex", "critical_sm_ex", "critical_un_ex", "critical_context", "filler_context", "filler_ex", "stim_table")
+```
+
+# Predictions
+
+```{r predicts, fig.align='center', echo=FALSE, out.width='100%'}
+# Table values
+dm_predict_1 <- "(N400-)P600"
+sm_predict_1 <- "Baseline"
+dm_predict_2 <- "Same as baseline"
+sm_predict_2 <- "Baseline"
+un_predict <- ""
+off_dm_1 <- "Low"
+off_dm_2 <- "Similar to standard single modals"
+off_un_1 <- "Same as attested double modals"
+off_un_2 <- "Lower than single and attested double modals"
+off_sm_1 <- "High"
+off_sm_2 <- "High"
+# familiarty, acceptability, and intelligibility
+
+# Predictions table
+headers <- c("Type", "Mainstream", "Southern", "Mainstream", "Southern")
+critical_dm <- c("Attested double modal", dm_predict_1, dm_predict_2, off_dm_1, off_dm_2)
+critical_sm <- c("Standard single modal", sm_predict_1, sm_predict_2, off_sm_1, off_sm_2)
+critical_un <- c("Unattested double modal", un_predict, un_predict, off_un_1, off_un_2)
+pred_table <- rbind(critical_sm, critical_dm, critical_un)
+rownames(pred_table) <- NULL
+colnames(pred_table) <- headers
+
+# Knit predictions table
+knitr::kable(pred_table) %>%
+  kableExtra::kable_styling(font_size=30) %>%
+  add_header_above(header = c(" ", "ERP" = 2, "Offline measures" = 2)) %>%
+  collapse_rows(columns = 1:length(headers), valign = "middle") %>%
+  row_spec(3, extra_css="border-top: 5px solid #d7d8db; border-bottom: 5px solid #d7d8db") %>%
+  row_spec(0, align = "c") %>%
+  footnote(general="ERP time-locked to second modal (could or should) in attested double modal sentences to compare to standard single modal",
+           general_title="") 
+
+# Remove variables
+var_list <- c("dm_predict_1", "dm_predict_2", "sm_predict_1", "sm_predict_2", "un_predict", "off_dm_1", "off_dm_2", "off_sm_1", "off_sm_2", "off_un_1", "off_un_2", "headers", "critical_dm", "critical_sm", "critical_un", "pred_table")
+rm(list = var_list)
+```
+
+# Participants
+
+```{r participants, fig.align='center', echo=FALSE, out.width='100%'}
+# Participant values
+erp_mae <- length(MAE_erp)
+erp_suse <- length(SUSE_erp)
+off_mae <- summary_back %>% dplyr::filter(dialect == "MAE" & ID != "214") %>% nrow()
+off_suse <- summary_back %>% dplyr::filter(dialect == "SUSE") %>% nrow()
+total_mae <- summary_back %>% dplyr::filter(dialect == "MAE") %>% nrow() %>% sum(2)
+total_suse <- off_suse %>% sum(1)
+age_mae <- summary_back %>% 
+  dplyr::filter(dialect == "MAE") %>% 
+  pull(Age) %>% 
+  as.numeric() %>%
+  mean(na.rm = TRUE) %>%
+  round(1)
+age_suse <- summary_back %>% 
+  dplyr::filter(dialect == "SUSE") %>%
+  pull(Age) %>% 
+  as.numeric() %>%
+  mean(na.rm = TRUE) %>%
+  round(1)
+
+# Table strings
+loc_mae <- "Did not lived in the South for a significant period of time"
+loc_suse <- "Lived in the South from ages 3-13 or 14-18"
+dia_mae <- "Not exposed to \"might could\" and unfamiliar with double modals"
+dia_suse <- "Exposed to \"might could\" or familiar with double modals"
+
+# Participant table
+headers <- c("Group", "Stage", "Location", "Dialect", "Total tested", "ERP", "Offline", "Mean age")
+MAE_line <- c("Mainstream", "Complete", loc_mae, dia_mae, total_mae, erp_mae, off_mae, age_mae)
+SUSE_line <- c("Southern", "Ongoing", loc_suse, dia_suse, total_suse, erp_suse, off_suse, age_suse)
+part_table <- rbind(MAE_line, SUSE_line)
+rownames(part_table) <- NULL
+colnames(part_table) <- headers
+
+# Knit participant table
+knitr::kable(part_table) %>%
+  kableExtra::kable_styling(font_size=25) %>%
+  row_spec(1, background=paste0(sm_shade,"20")) %>%
+  row_spec(2, background=paste0(dm_shade,"20"))
+
+# Remove variables
+var_list <- c("loc_mae", "dia_mae", "total_mae", "erp_mae", "off_mae", "part_table", "loc_suse", "dia_suse", "total_suse", "erp_suse", "off_suse", "MAE_line", "SUSE_line", "headers")
+rm(list = var_list)
+```
+
+<hr style="height:10px; visibility:hidden;" />
+
+```{r map, fig.align='left', out.width='90%', echo=FALSE, dpi=300}
+library(magick)
+#Load map image and trim white space
+dialect_map <- image_read("images/dialect_map_caption.png")
+dialect_map <- image_trim(dialect_map)
+dialect_map
+```
+
+## Both dialect groups are sensitive to syntactic variation at both structure-building (early AN) and integration (P600) levels of processing
+
+# Mainstream American English listener group
+
+```{r erp_mae, fig.align='center', out.width='85%', echo=FALSE, dpi=300}
+#Load map image and trim white space
+mae_graph <- image_read("images/butterfly_MAE.png")
+mae_graph <- image_trim(mae_graph)
+mae_graph
+```
+
+# Southern United States English listener group
+
+```{r erp_suse, fig.align='center', out.width='85%', echo=FALSE, dpi=300}
+suse_graph <- image_read("images/butterfly_SUSE.png")
+suse_graph <- image_trim(suse_graph)
+suse_graph
+```
+
+# Offline tasks
+
+```{r accpt_dat, echo=FALSE}
+# Create subset of dataframe and set factor levels
+mean_multi <- summary_back %>%
+  select(ID, dialect, contains("double"), contains("incorrect"), contains("standard")) %>%
+  gather(type, rating, -c(ID, dialect)) %>%
+  separate(type,c("modal","measure"),sep="_",remove=FALSE) %>%
+  mutate(modal=factor(modal,
+                      levels=c("standard","double","incorrect"),
+                      labels=c("Standard single modal", "Attested double modal", "Unattested double modal")),
+         measure=factor(measure,
+                        levels=c("acceptable","understand","familiar"),
+                        labels=c("Acceptability","Intelligibility","Familiarity"))) %>%
+  drop_na()
+
+# Create table with confidence intervals
+library(Rmisc)
+multi_error <- summarySE(mean_multi, measurevar="rating", 
+                         groupvars=c("modal", "measure", "dialect"))
+
+# Create separate table for acceptability/intelligibility
+multi_error_accpt <- multi_error %>%
+  dplyr::filter(measure != "Familiarity")
+
+# Create separate table for familiarity
+multi_error_fam <- multi_error %>%
+  dplyr::filter(measure == "Familiarity")
+
+# Remove variables
+rm(mean_multi, multi_error)
+```
+
+```{r accpt, echo=FALSE, fig.height=3.1, out.width='100%', fig.align='left', dpi=300}
+# Add to theme_specs
+exttheme_specs <- list(geom_errorbar(aes(ymin=rating-ci, ymax=rating+ci), width=0.1),
+                       scale_y_continuous(expand=c(0,0)),
+                       scale_x_discrete(expand=c(0,0)),
+                       facet_grid(dialect ~ measure, scales = "free_y"),
+                       theme_classic(),
+                       scale_fill_manual(values=c(sm_shade,dm_shade,psu_grey), name="Modal type"),
+                       theme_specs,
+                       theme(axis.text.x=element_blank(), 
+                             axis.title.x=element_blank(),
+                             axis.ticks.x=element_blank()))
+
+# Create acceptability/intelligibility plot
+accpt_plot <- ggplot(multi_error_accpt, aes(modal, rating, fill=modal)) +
+  geom_bar(position="dodge", stat="identity") +
+  coord_cartesian(ylim=c(1,5.01)) +
+  labs(title="Ratings of experimental sentence stimuli") +
+  exttheme_specs +
+  ylab("Mean rating (by participant)") +
+  theme(strip.text.y = element_blank(), legend.position = "none") +
+  geom_hline(aes(yintercept=scale_mean_5, linetype = "dashed")) +
+  scale_linetype_manual(values = "dashed")
+
+# Create familiarity plot
+fam_plot <- ggplot(multi_error_fam, aes(modal, rating, fill=modal)) +
+  geom_bar(position="dodge", stat="identity") +
+  coord_cartesian(ylim=c(1,4.01)) +
+  exttheme_specs +
+  theme(axis.title.y = element_blank()) +
+  geom_hline(aes(yintercept=scale_mean_4), linetype = "dashed")
+
+library(patchwork)
+accpt_plot + fam_plot + plot_layout(widths = c(2,1))
+```
+
+<font size=5>Error bars represent 95% confidence intervals</font>
+
+```{r attitude, echo=FALSE, fig.height=3.1, out.width='100%', fig.align='left', dpi=300}
+# Add to theme_specs
+new_theme_specs <- list(geom_jitter(size = 1),
+                        geom_smooth(method = "lm", se = TRUE, level = 0.95, fill = psu_grey),
+                        scale_y_continuous(expand = c(0,0), limits = c(0,6)),
+                        theme_classic(),
+                        scale_color_manual(values = c(sm_shade,dm_shade),
+                                           name = "Dialect group",
+                                           labels = c("Mainstream", "Southern")),
+                        ylab("Mean acceptability ratings"),
+                        theme_specs)
+
+# Attitude and culture data
+att_dat <- summary_back %>%
+  select(Southern, South_weighted, dialect, double_acceptable, MC_mean) %>%
+  drop_na()
+
+# Make culture data plot
+cult_plot <- ggplot(att_dat) +
+  aes(South_weighted, double_acceptable, color = dialect) +
+  ggtitle("Southern cultural affiliation and dialect attitudes by double modal acceptability") +
+  new_theme_specs +
+  scale_x_continuous(expand = c(0,0), limits = c(0,0.4)) +
+  theme(legend.position = "none") +
+  xlab("Weighted Southern cultural affiliation score")
+
+# Make attitude data plot
+att_plot <- ggplot(att_dat) +
+  aes(Southern, double_acceptable, color = dialect) +
+  new_theme_specs +
+  scale_x_continuous(expand = c(0,0), limits = c(1,5)) +
+  xlab("Mean Southern dialect attitude score")
+
+# Make exposure plot
+# exp_plot <- ggplot(att_dat) +
+#   aes(MC_mean, double_acceptable, color = dialect) +
+#   new_theme_specs
+
+# Combine plots
+cult_plot + att_plot
+```
+
+```{r attitude_regress, echo=FALSE, eval=FALSE}
+lm_cult <- lm(double_acceptable ~ South_weighted*dialect, att_dat)
+summary(lm_cult)
+
+att_suse <- att_dat %>% dplyr::filter(dialect == "SUSE")
+
+lm_cult_suse <- lm(double_acceptable ~ South_weighted, att_suse)
+summary(lm_cult_suse)
+
+att_mae <- att_dat %>% dplyr::filter(dialect == "MAE")
+
+lm_cult_mae <- lm(double_acceptable ~ South_weighted, att_mae)
+summary(lm_cult_mae)
+
+exp <- summary_back %>% select(double_acceptable, MC_mean, south_only, dialect)
+
+lm_exp_MC <- lm(double_acceptable ~ MC_mean*dialect, exp)
+summary(lm_exp_MC)
+
+exp_suse <- exp %>% dplyr::filter(dialect == "SUSE")
+
+lm_exp_suse <- lm(double_acceptable ~ MC_mean, exp_suse)
+summary(lm_exp_suse)
+
+exp_mae <- exp %>% dplyr::filter(dialect == "MAE")
+
+lm_exp_mae <- lm(double_acceptable ~ MC_mean, exp_mae)
+summary(lm_exp_mae)
+```
+
+<font size=5>95% confidence intervals displayed around regression lines</font>
+
+# Results
+
+- Mainstream listeners exhibited the expected P600 effect, reflecting **syntactic reanalysis**, in response to attested double modals
+- Southern listeners, contrary to predictions, also showed a robust P600 effect
+- Attested double modals elicited early anterior negativities, reflecting **automatic detection** of non-standard speech, in both dialect groups
+- Southern listeners displayed a strong dissociation between their ratings of attested double modals and their ERP responses
+
+# Conclusion
+
+### Are our brains more prescriptive than our mouths?
+
+- Combining neurocognitive and linguistic methods reveals dynamic interactions among dialect experience, sociolinguistic variables, and language processing
+- **Future direction**: studying Southern speakers in their local communities with *The Brain Bus* (mobile EEG system) to disentangle the effects of dialect immersion and experience
+
+# References and acknowledgements
+
+<font size=3><div id="refs"></div></font>
+
+<img style="padding: 0 15px; float:left;" src="qr_code.png" width=7% height=7%> <div style="text-align: right"><font size=6>Holly Zaharchuk: hzaharchuk@psu.edu</font></div> <div style="text-align: right"><font size=6>University Graduate Fellow (UGF)</font></div>
