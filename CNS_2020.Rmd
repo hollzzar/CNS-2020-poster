@@ -284,7 +284,7 @@ dialect_map <- image_trim(dialect_map)
 dialect_map
 ```
 
-## Both dialect groups are sensitive to syntactic variation at both structure-building (early AN) and integration (P600) levels of processing
+## Both dialect groups are sensitive to syntactic variation at both structure-building (Early AN) and integration (P600) levels of processing
 
 # Mainstream American English listener group
 
