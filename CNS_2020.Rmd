@@ -62,6 +62,8 @@ if (!exists("summary_back")) {
   setwd("~/Mirror/DM_analysis_scripts/r_scripts")
   
   source("DM_attitudes_survey.R", local=TRUE)
+  var_list <- c("paraphrase", "part_para")
+  rm(list = var_list)
   
   setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
 }
@@ -95,7 +97,7 @@ for (i in 1:groups) {
 }
 
 # Remove unnecessary variables
-var_list = c("CP", "groups", "group_list", "i", "paraphrase", "part_para", "name", "CP_diff", "group")
+var_list = c("CP", "groups", "group_list", "i", "name", "CP_diff", "group")
 rm(list=var_list)
 ```
 
@@ -144,7 +146,7 @@ theme_specs <- list(theme(text=element_text(family="Avenir"),
 # Background
 
 - Dialectal (regional, social, or ethnocultural) variation is inherent to language
-- Theories of language processing are limited in their explanatory power of everyday speech without including variation
+- Without including variation, theories of language processing are limited in their explanatory power of everyday speech
 - Neurocognitive studies of dialect tend to focus on phonological (acoustic) or lexical (word-based) rather than syntactic (structural) variation
 - Syntactic processing research with EEG typically relies written stimuli containing grammatical violations or ambiguities
 - **Double modals**: indirectness or hedging <font size=5>[@hasty2012; @mishoe1994]</font>
@@ -284,7 +286,7 @@ dialect_map <- image_trim(dialect_map)
 dialect_map
 ```
 
-## Both dialect groups are sensitive to syntactic variation at both structure-building (Early AN) and integration (P600) levels of processing
+## Both dialect groups are sensitive to syntactic variation at the structure-building (Early AN) and integration (P600) levels of processing
 
 # Mainstream American English listener group
 
@@ -435,10 +437,9 @@ summary(lm_att)
 
 # Results
 
-- Mainstream listeners exhibited the expected P600 effect, reflecting **syntactic reanalysis**, in response to attested double modals
-- Southern listeners, contrary to predictions, also showed a robust P600 effect
-- Attested double modals elicited early anterior negativities, reflecting **automatic detection** of non-standard speech, in both dialect groups
+- Attested double modals engaged **automatic detection** of non-standard speech and **syntactic reanalysis** in both dialect groups
 - Southern listeners displayed a strong dissociation between their ratings of attested double modals and their ERP responses
+- The interaction between dialect group and Southern cultural affiliation, but not language attitudes, significantly correlated with acceptability ratings of attested double modals
 
 # Conclusion
 
