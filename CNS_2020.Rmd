@@ -146,9 +146,9 @@ theme_specs <- list(theme(text=element_text(family="Avenir"),
 # Background
 
 - Dialectal (regional, social, or ethnocultural) variation is inherent to language
-- Without including variation, theories of language processing are limited in their explanatory power of everyday speech
+- Without including variation, theories of language processing are limited in their ability to explain everyday speech
 - Neurocognitive studies of dialect tend to focus on phonological (acoustic) or lexical (word-based) rather than syntactic (structural) variation
-- Syntactic processing research with EEG typically relies written stimuli containing grammatical violations or ambiguities
+- Syntactic processing research with EEG typically relies on written stimuli containing grammatical violations or ambiguities
 - **Double modals**: indirectness or hedging <font size=5>[@hasty2012; @mishoe1994]</font>
 
 # Stimuli
@@ -178,7 +178,7 @@ knitr::kable(stim_table) %>%
   collapse_rows(columns = 1:length(headers), valign = "middle") %>%
   row_spec(4, extra_css="border-top: 5px solid #d7d8db; border-bottom: 5px solid #d7d8db") %>%
   row_spec(3, extra_css="border-top: 5px solid #d7d8db") %>%
-  footnote(general="Modals used: could and should",
+  footnote(general="Root modals used: could and should",
            general_title="") %>%
   row_spec(0, align = "c")
 
