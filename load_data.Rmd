@@ -1,0 +1,93 @@
+---
+pagetitle: "load_data"
+---
+
+```{r offline_vars}
+# Set global variables
+code_geo <- FALSE
+new_image <- FALSE
+new_erp <- FALSE
+SUSE_tab <- FALSE
+new_corr <- FALSE
+data_path <- "~/Mirror/DM_analysis_scripts/r_scripts"
+writing_path <- "~/Mirror/DM_analysis_scripts/posters/CNS_poster"
+
+# Load behavioral data
+setwd(data_path)
+
+# Offline data
+source("DM_attitudes_survey.R", local=TRUE)
+
+# Comprehension question data
+comprehension_dat <- read.csv("erp/comprehension.csv")
+
+setwd(writing_path)
+```
+
+```{r erp_vars}
+# Create variable lists
+group_list <- c("MAE", "SUSE")
+groups <- length(group_list)
+
+setwd(data_path)
+
+# Loops through groups and pull 
+for (i in 1:groups) {
+  
+  # Load ERP data
+  group <- group_list[i]
+  
+  # Load ERP data for correlation analysis
+  source("DM_CP.R", local=TRUE)
+  
+  # Assign group-specific variable name to prevent loop from overwriting data
+  name <- paste0("CP_diff", "_", group)
+  assign(name, get("CP_diff"))
+  
+  # Remove interim variables
+  rm(list = c("p600_CP", "name", "CP_diff", "p600"))
+  
+}
+
+# Remove unnecessary variables from outer loop
+rm(list = c("i", "group", "name"))
+
+setwd(writing_path)
+```
+
+```{r p600_covars, message=FALSE, warning=FALSE}
+# Join ERP lists
+all_erp <- c(MAE_erp, SUSE_erp)
+
+# Mark which participants have ERP data and filter
+summary_back <- summary_back %>%
+  dplyr::filter(ID %notin% unusable) %>%
+  mutate(erp_code = ifelse(ID %in% all_erp, 1, 0))
+
+# Create separate data frame with everyone who has ERP data
+p600_covar <- summary_back %>%
+  dplyr::filter(erp_code == 1)
+
+# Combine summary data with P600 amplitude data
+p600_covar <- p600_covar %>% 
+  left_join(CP_diff_SUSE, c("ID"="ERPset")) %>%
+  left_join(CP_diff_MAE, c("ID"="ERPset"))
+
+# Remove extra column after joining
+p600_covar <- p600_covar %>% 
+  mutate(bin_diff = coalesce(p600_covar$bin_diff.x, p600_covar$bin_diff.y)) %>%
+  select(-c(bin_diff.x, bin_diff.y))
+
+# Remove unnecessary variables
+rm(list = c("CP_diff_MAE", "CP_diff_SUSE"))
+```
+
+```{r load_plots, message=FALSE, warning=FALSE}
+# Load plots
+setwd(data_path)
+  
+# Offline data
+source("behav_plots.R", local=TRUE)
+  
+setwd(writing_path)
+```
