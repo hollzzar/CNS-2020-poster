@@ -42,114 +42,21 @@ csl: apa.csl
 ## R setup ##
 
 # knitr settings
-chooseCRANmirror(graphics=FALSE, ind=1)
-knitr::opts_chunk$set(warning=FALSE, message=FALSE)
-knitr::knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackage{xcolor}', x, fixed = TRUE)})
+# chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+# knitr::knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackage{xcolor}', x, fixed = TRUE)})
 ```
 
-```{r vars, include=FALSE, message=FALSE, warning=FALSE}
-## Load behavioral data ##
-
-# Set global variables
-code_geo <- FALSE
-new_image <- FALSE
-new_erp <- FALSE
-SUSE_tab <- FALSE
-
-# Load behavior variables
-if (!exists("summary_back")) {
-  
-  setwd("~/Mirror/DM_analysis_scripts/r_scripts")
-  
-  source("DM_attitudes_survey.R", local=TRUE)
-  var_list <- c("paraphrase", "part_para")
-  rm(list = var_list)
-  
-  setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
-}
-```
-
-```{r covars, include=FALSE, message=FALSE, warning=FALSE}
-## Load ERP data ##
-
-# Create variable lists
-group_list <- c("MAE", "SUSE")
-groups <- length(group_list)
-
-# Loops through groups and pull 
-for (i in 1:groups) {
-  
-  # Load ERP data
-  group <- group_list[i]
-  
-  # Set directory to ERP data
-  setwd("~/Mirror/DM_analysis_scripts/r_scripts")
-  
-  # Load ERP data for correlation analysis
-  source("DM_CP.R", local=TRUE)
-  
-  # Set directory back to poster
-  setwd("~/Mirror/DM_analysis_scripts/posters/CNS_poster")
-  
-  name <- paste0("CP_diff", "_", group)
-  assign(name, get("CP_diff"))
-  
-}
-
-# Remove unnecessary variables
-var_list = c("CP", "groups", "group_list", "i", "name", "CP_diff", "group")
-rm(list=var_list)
-```
-
-```{r p600_covar, include=FALSE, message=FALSE, warning=FALSE}
-## Get P600 amplitude data for all participants ##
-
-# Join ERP lists
-all_erp <- c(MAE_erp, SUSE_erp)
-
-# Mark which participants have ERP data and filter
-summary_back <- summary_back %>%
-  dplyr::filter(ID %notin% unusable) %>%
-  mutate(erp_code = ifelse(ID %in% all_erp, 1, 0))
-
-# Create separate data frame with everyone who has ERP data
-p600_covar <- summary_back %>%
-  dplyr::filter(erp_code == 1)
-
-# Combine summary data with P600 amplitude data
-p600_covar <- p600_covar %>% 
-  left_join(CP_diff_SUSE, c("ID"="ERPset")) %>%
-  left_join(CP_diff_MAE, c("ID"="ERPset"))
-
-# Remove extra column after joining
-p600_covar <- p600_covar %>% 
-  mutate(bin_diff = coalesce(p600_covar$bin_diff.x, p600_covar$bin_diff.y)) %>%
-  select(-c(bin_diff.x, bin_diff.y))
-
-# Remove unnecessary variables
-rm(list = c("CP_diff_MAE", "CP_diff_SUSE"))
-```
-
-```{r graph_elements, include=FALSE, message=FALSE, warning=FALSE}
-# Create variables for graphs
-scale_mean_5 <- mean(c(1,5))
-scale_mean_4 <- mean(c(1,4))
-text_size <- 12
-theme_specs <- list(theme(text=element_text(family="Avenir"),
-                    strip.background=element_blank(),
-                    legend.key.size=unit(0.4, "cm"),
-                    plot.title=element_text(size=text_size),
-                    axis.title.y=element_text(size=text_size*0.75),
-                    axis.title.x=element_text(size=text_size*0.75)))
+```{r child = 'load_data.Rmd', message=FALSE, warning=FALSE}
 ```
 
 # Background
 
-- Dialectal (regional, social, or ethnocultural) variation is inherent to language
-- Without including variation, theories of language processing are limited in their ability to explain everyday speech
-- Neurocognitive studies of dialect tend to focus on phonological (acoustic) or lexical (word-based) rather than syntactic (structural) variation
-- Syntactic processing research with EEG typically relies on written stimuli containing grammatical violations or ambiguities
-- **Double modals**: indirectness or hedging <font size=5>[@hasty2012; @mishoe1994]</font>
+- Variation across individuals, accents, and dialects is inherent to language
+- Theories of language processing primarily draw on evidence from standard language varieties
+- Syntactic processing research with EEG typically relies on written stimuli with grammatical violations or ambiguities
+- Production-Distribution-Comprehension (PDC) model provides mechanistic account of relation between familiarity and processing in previous research on dialect <font size=5>[@macdonald2013]</font>
+- **Double modals**: "socially diagnostic" Southern dialect feature signaling indirectness or hedging <font size=5>[@hasty2012; @mishoe1994; @bernstein2003]</font>
 
 # Stimuli
 
@@ -230,27 +137,63 @@ rm(list = var_list)
 
 # Participants
 
-```{r participants, fig.align='center', echo=FALSE, out.width='100%'}
-# Participant values
+```{r part_total}
+# Number of participants excluded from all analyses
+## 107 and 122 (MAE) did not fulfill language criteria
+mae_exc <- 2
+## 202 (SUSE) did not fulfill age criteria
+suse_exc <- 1
+
+# Total participants tested
+total_mae <- summary_back %>% dplyr::filter(dialect == "Mainstream") %>% nrow() %>% sum(mae_exc)
+total_suse <- summary_back %>% dplyr::filter(dialect == "Southern") %>% nrow() %>% sum(suse_exc)
+total_all <- total_mae + total_suse
+```
+
+```{r part_groups}
+# Number of participants with ERP data
 erp_mae <- length(MAE_erp)
 erp_suse <- length(SUSE_erp)
-off_mae <- summary_back %>% dplyr::filter(dialect == "MAE" & ID != "214") %>% nrow()
-off_suse <- summary_back %>% dplyr::filter(dialect == "SUSE") %>% nrow()
-total_mae <- summary_back %>% dplyr::filter(dialect == "MAE") %>% nrow() %>% sum(2)
-total_suse <- off_suse %>% sum(1)
-age_mae <- summary_back %>% 
-  dplyr::filter(dialect == "MAE") %>% 
-  pull(Age) %>% 
-  as.numeric() %>%
-  mean(na.rm = TRUE) %>%
-  round(1)
-age_suse <- summary_back %>% 
-  dplyr::filter(dialect == "SUSE") %>%
-  pull(Age) %>% 
-  as.numeric() %>%
-  mean(na.rm = TRUE) %>%
-  round(1)
+erp_all <- erp_mae + erp_suse
 
+# Number of participants with offline data
+## 214 (MAE) completed EEG session but had to leave early without completing judgment or attitude surveys
+off_mae <- summary_back %>% dplyr::filter(dialect == "Mainstream" & behav_code == 1) %>% nrow()
+## 225 (SUSE) completed dialect and attitude surveys but could not complete EEG session (hair)
+off_suse <- summary_back %>% dplyr::filter(dialect == "Southern" & behav_code == 1) %>% nrow()
+
+# Number of participants excluded from ERP analysis (blinks)
+erp_exc_mae <- summary_back %>% dplyr::filter(erp_code == 0 & dialect == "Mainstream") %>% nrow()
+erp_exc_suse <- summary_back %>% dplyr::filter(erp_code == 0 & dialect == "Southern" & ID != "225") %>% nrow()
+```
+
+```{r part_age}
+# Pull age data for MAE participants
+age_mae <- summary_back %>% 
+  dplyr::filter(dialect == "Mainstream") %>% 
+  pull(Age) %>% 
+  as.numeric()
+
+# Pull age data for SUSE participants
+age_suse <- summary_back %>% 
+  dplyr::filter(dialect == "Southern") %>%
+  pull(Age) %>% 
+  as.numeric()
+```
+
+```{r age_mean}
+# Mean age for MAE participants
+age_mae_mean <- age_mae %>%
+  mean(na.rm = TRUE) %>%
+  sprintf("%.2f", .)
+
+# Mean age for SUSE participants
+age_suse_mean <- age_suse %>%
+  mean(na.rm = TRUE) %>%
+  sprintf("%.2f", .)
+```
+
+```{r participants, fig.align='center', echo=FALSE, out.width='100%'}
 # Table strings
 loc_mae <- "Did not live in the South for a significant period of time"
 loc_suse <- "Lived in the South during childhood or adolescence"
@@ -259,8 +202,8 @@ dia_suse <- "Exposed to \"might could\" or familiar with double modals"
 
 # Participant table
 headers <- c("Group", "Stage", "Location", "Dialect", "Total tested", "ERP", "Offline", "Mean age")
-MAE_line <- c("Mainstream", "Complete", loc_mae, dia_mae, total_mae, erp_mae, off_mae, age_mae)
-SUSE_line <- c("Southern", "Ongoing", loc_suse, dia_suse, total_suse, erp_suse, off_suse, age_suse)
+MAE_line <- c("Mainstream", "Complete", loc_mae, dia_mae, total_mae, erp_mae, off_mae, age_mae_mean)
+SUSE_line <- c("Southern", "Ongoing", loc_suse, dia_suse, total_suse, erp_suse, off_suse, age_suse_mean)
 part_table <- rbind(MAE_line, SUSE_line)
 rownames(part_table) <- NULL
 colnames(part_table) <- headers
@@ -278,17 +221,13 @@ rm(list = var_list)
 
 <hr style="height:10px; visibility:hidden;" />
 
-```{r map, fig.align='left', out.width='90%', echo=FALSE, dpi=300}
-library(magick)
-#Load map image and trim white space
-dialect_map <- image_read("images/dialect_map_caption.png")
-dialect_map <- image_trim(dialect_map)
-dialect_map
+```{r map, fig.align='left', out.width='100%', echo=FALSE, dpi=300}
+knitr::include_graphics("images/dialect_map.png")
 ```
 
-## Both dialect groups are sensitive to syntactic variation at the structure-building (Early AN) and integration (P600) levels of processing
+## Both dialect groups were sensitive to syntactic variation at the structure-building (Early AN) and integration (P600) levels of processing
 
-# Mainstream American English listener group
+# Mainstream participant group
 
 ```{r erp_mae, fig.align='center', out.width='85%', echo=FALSE, dpi=300}
 #Load map image and trim white space
@@ -297,7 +236,7 @@ mae_graph <- image_trim(mae_graph)
 mae_graph
 ```
 
-# Southern United States English listener group
+# Southern participant group
 
 ```{r erp_suse, fig.align='center', out.width='85%', echo=FALSE, dpi=300}
 suse_graph <- image_read("images/butterfly_SUSE.png")
@@ -307,146 +246,23 @@ suse_graph
 
 # Offline tasks
 
-```{r accpt_dat, echo=FALSE}
-# Create subset of dataframe and set factor levels
-mean_multi <- summary_back %>%
-  select(ID, dialect, contains("double"), contains("incorrect"), contains("standard")) %>%
-  gather(type, rating, -c(ID, dialect)) %>%
-  separate(type,c("modal","measure"),sep="_",remove=FALSE) %>%
-  mutate(modal=factor(modal,
-                      levels=c("standard","double","incorrect"),
-                      labels=c("Standard single modal", "Attested double modal", "Unattested double modal")),
-         measure=factor(measure,
-                        levels=c("acceptable","understand","familiar"),
-                        labels=c("Acceptability","Intelligibility","Familiarity"))) %>%
-  drop_na()
-
-# Create table with confidence intervals
-library(Rmisc)
-multi_error <- summarySE(mean_multi, measurevar="rating", 
-                         groupvars=c("modal", "measure", "dialect"))
-
-# Create separate table for acceptability/intelligibility
-multi_error_accpt <- multi_error %>%
-  dplyr::filter(measure != "Familiarity")
-
-# Create separate table for familiarity
-multi_error_fam <- multi_error %>%
-  dplyr::filter(measure == "Familiarity")
-
-# Remove variables
-rm(mean_multi, multi_error)
+```{r accpt, echo=FALSE, fig.height=6, out.width='100%', fig.align='left', dpi=300}
+judge_plot
 ```
-
-```{r accpt, echo=FALSE, fig.height=3.1, out.width='100%', fig.align='left', dpi=300}
-# Add to theme_specs
-exttheme_specs <- list(geom_errorbar(aes(ymin=rating-ci, ymax=rating+ci), width=0.1),
-                       scale_y_continuous(expand=c(0,0)),
-                       scale_x_discrete(expand=c(0,0)),
-                       facet_grid(dialect ~ measure, scales = "free_y"),
-                       theme_classic(),
-                       scale_fill_manual(values=c(sm_shade,dm_shade,psu_grey), name="Modal type"),
-                       theme_specs,
-                       theme(axis.text.x=element_blank(), 
-                             axis.title.x=element_blank(),
-                             axis.ticks.x=element_blank(),
-                             panel.spacing.y=unit(1, "lines")))
-
-# Create acceptability/intelligibility plot
-accpt_plot <- ggplot(multi_error_accpt, aes(modal, rating, fill=modal)) +
-  geom_bar(position="dodge", stat="identity") +
-  coord_cartesian(ylim=c(1,5.01)) +
-  labs(title="Ratings of experimental sentence stimuli") +
-  exttheme_specs +
-  ylab("Mean rating (by participant)") +
-  theme(strip.text.y = element_blank(), legend.position = "none") +
-  geom_hline(aes(yintercept=scale_mean_5, linetype = "dashed")) +
-  scale_linetype_manual(values = "dashed")
-
-# Create familiarity plot
-fam_plot <- ggplot(multi_error_fam, aes(modal, rating, fill=modal)) +
-  geom_bar(position="dodge", stat="identity") +
-  coord_cartesian(ylim=c(1,4.01)) +
-  exttheme_specs +
-  theme(axis.title.y = element_blank()) +
-  geom_hline(aes(yintercept=scale_mean_4), linetype = "dashed")
-
-library(patchwork)
-accpt_plot + fam_plot + plot_layout(widths = c(2,1))
-```
-
-<font size=5>Error bars represent 95% confidence intervals</font>
-
-```{r attitude, echo=FALSE, fig.height=3.1, out.width='100%', fig.align='left', dpi=300}
-# Add to theme_specs
-new_theme_specs <- list(geom_jitter(size = 1),
-                        geom_smooth(method = "lm", se = TRUE, level = 0.95, fill = psu_grey),
-                        scale_y_continuous(expand = c(0,0), limits = c(0,6)),
-                        theme_classic(),
-                        scale_color_manual(values = c(sm_shade,dm_shade),
-                                           name = "Dialect group",
-                                           labels = c("Mainstream", "Southern")),
-                        ylab("Mean acceptability ratings"),
-                        theme_specs)
-
-# Attitude and culture data
-att_dat <- summary_back %>%
-  select(Southern, South_weighted, double_acceptable, MC_mean,
-         dialect, suse_dummy, mae_dummy) %>%
-  drop_na()
-
-# Make culture data plot
-cult_plot <- ggplot(att_dat) +
-  aes(South_weighted, double_acceptable, color = dialect) +
-  ggtitle("Southern cultural affiliation and dialect attitudes by double modal acceptability") +
-  new_theme_specs +
-  scale_x_continuous(expand = c(0,0), limits = c(0,0.4)) +
-  theme(legend.position = "none") +
-  xlab("Weighted Southern cultural affiliation score")
-
-# Make attitude data plot
-att_plot <- ggplot(att_dat) +
-  aes(Southern, double_acceptable, color = dialect) +
-  new_theme_specs +
-  scale_x_continuous(expand = c(0,0), limits = c(1,5)) +
-  xlab("Mean Southern dialect attitude score")
-
-# Combine plots
-cult_plot + att_plot
-```
-
-```{r attitude_regress, echo=FALSE, eval=FALSE}
-# Regression for cultural affiliation by dialect group interaction
-lm_cult <- lm(double_acceptable ~ South_weighted*dialect, att_dat)
-summary(lm_cult)
-
-# Explore effect of cultural affiliation on acceptability in SUSE listeners
-lm_cult_suse <- lm(double_acceptable ~ South_weighted*suse_dummy, att_dat)
-summary(lm_cult_suse)
-
-# Explore effect of cultural affiliation on acceptability in MAE listeners
-lm_cult_mae <- lm(double_acceptable ~ South_weighted*mae_dummy, att_dat)
-summary(lm_cult_mae)
-
-# Regression for Southern language attitudes by dialect group interaction
-lm_att <- lm(double_acceptable ~ Southern*dialect, att_dat)
-summary(lm_att)
-```
-
-<font size=5>95% confidence intervals displayed around regression lines</font>
 
 # Results
 
 - Attested double modals engaged **automatic detection** of non-standard speech and **syntactic reanalysis** in both dialect groups
-- Southern listeners displayed a strong dissociation between their ratings of attested double modals and their ERP responses
-- The interaction between dialect group and Southern cultural affiliation, but not language attitudes, significantly correlated with acceptability ratings of attested double modals
+- Southern participants rated attested double modal constructions higher on acceptability, intelligibility, and familiarity than Mainstream participants
+- Neural results went against experience-based predictions, but behavioral results reflected dialect experience
 
 # Conclusion
 
 ### Are our brains more prescriptive than our mouths?
 
-- Combining neurocognitive and linguistic methods reveals dynamic interactions among dialect experience, sociolinguistic variables, and language processing
-- **Future direction**: studying Southern speakers in their local communities with *The Brain Bus* (mobile EEG system) to disentangle the effects of dialect immersion and experience
+- Complexity and constraints of experience-based theories of language processing in accounting for dialectal variation
+- Need for enhanced experience-based model of language processing incorporating notions of social weighting, salience, and prescriptive language ideologies <font size=5>[@sumner2014]</font>
+- **Future direction**: studying Southern speakers in their local communities with *The Brain Bus* (mobile EEG system)
 
 # References and acknowledgements
 
